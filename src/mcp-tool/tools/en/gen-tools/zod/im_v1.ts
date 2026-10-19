@@ -1719,7 +1719,7 @@ export const imV1MessageGet = {
   httpMethod: 'GET',
   description:
     '[Feishu/Lark]-Messaging-Message management-Obtain the content of the specified message-Query message content with message_id',
-  accessTokens: ['tenant'],
+  accessTokens: ['tenant', 'user'],
   schema: {
     params: z
       .object({ user_id_type: z.enum(['open_id', 'union_id', 'user_id']).describe('User ID type').optional() })
@@ -1741,7 +1741,7 @@ export const imV1MessageList = {
   httpMethod: 'GET',
   description:
     '[Feishu/Lark]-Messaging-Message management-Get chat history-Obtains chat history (chat records) of chats (including private chats and group chats)',
-  accessTokens: ['tenant'],
+  accessTokens: ['tenant', 'user'],
   schema: {
     params: z.object({
       container_id_type: z
