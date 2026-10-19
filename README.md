@@ -1,3 +1,63 @@
+# Fork notes
+
+This is a fork of [larksuite/lark-openapi-mcp](https://github.com/larksuite/lark-openapi-mcp). It differs from upstream in one small way; everything below the next heading is the unmodified upstream README.
+
+## Why this fork exists
+
+Upstream marks the two "read messages" tools, `im.v1.message.list` and `im.v1.message.get`, as tenant-token only (`accessTokens: ['tenant']`). With `--token-mode user_access_token` they are hidden entirely, and in `auto` mode they can never be called with the logged-in user's identity. Lark's API does accept user access tokens for these endpoints (scopes `im:message.p2p_msg:get_as_user` and `im:message.group_msg:get_as_user`), so this fork changes those two tools to `accessTokens: ['tenant', 'user']` in both the `en` and `zh` tool sets. Nothing else is changed. See commit `28dc015`.
+
+## Login gotcha: always pass `--scope`
+
+Run both `lark-mcp login` and the `mcp` command with an explicit `--scope`, for example:
+
+```
+--scope "offline_access im:message:readonly im:message.p2p_msg:get_as_user im:message.group_msg:get_as_user im:chat:readonly im:chat.members:read contact:user.base:readonly"
+```
+
+Without `--scope` the package falls back to Lark's legacy OIDC login, and the message APIs reject that token with error `99991695`. If you already logged in without a scope, run `login` again with the scope so the stored token is replaced.
+
+## Install and run from this fork
+
+`package.json` has a `prepare` script that runs `yarn build`, so `dist/` is built automatically when the package is installed from git. The explicit route is:
+
+```bash
+git clone https://github.com/moritzge/lark-openapi-mcp.git
+cd lark-openapi-mcp
+yarn install   # runs `prepare` -> `yarn build`, producing dist/
+yarn build     # only needed again after editing src/
+
+# log in once as the user (redirect URL in the app console: http://localhost:3000/callback)
+node dist/cli.js login -a <app_id> -s <app_secret> --domain https://open.larksuite.com \
+  --scope "offline_access im:message:readonly im:message.p2p_msg:get_as_user im:message.group_msg:get_as_user im:chat:readonly im:chat.members:read contact:user.base:readonly"
+```
+
+Then point Claude Desktop (or any MCP client) at the built CLI:
+
+```json
+{
+  "mcpServers": {
+    "lark-mcp": {
+      "command": "node",
+      "args": [
+        "<path>/lark-openapi-mcp/dist/cli.js",
+        "mcp",
+        "-a", "<app_id>",
+        "-s", "<app_secret>",
+        "--domain", "https://open.larksuite.com",
+        "-t", "im.v1.message.list,im.v1.message.get,im.v1.chat.list,im.v1.chat.search,im.v1.chatMembers.get",
+        "--oauth",
+        "--token-mode", "user_access_token",
+        "--scope", "offline_access im:message:readonly im:message.p2p_msg:get_as_user im:message.group_msg:get_as_user im:chat:readonly im:chat.members:read contact:user.base:readonly"
+      ]
+    }
+  }
+}
+```
+
+Replace `<path>`, `<app_id>` and `<app_secret>` with your own values; adjust `-t` to the tools you need (drop it to expose the default tool set). Use `--domain https://open.feishu.cn` for Feishu instead of Lark.
+
+---
+
 # Feishu/Lark OpenAPI MCP
 
 [![npm version](https://img.shields.io/npm/v/@larksuiteoapi/lark-mcp.svg)](https://www.npmjs.com/package/@larksuiteoapi/lark-mcp)
