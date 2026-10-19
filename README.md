@@ -1,6 +1,33 @@
 # Fork notes
 
-This is a fork of [larksuite/lark-openapi-mcp](https://github.com/larksuite/lark-openapi-mcp). It differs from upstream in one small way; everything below the next heading is the unmodified upstream README.
+This is a fork of [larksuite/lark-openapi-mcp](https://github.com/larksuite/lark-openapi-mcp). It differs from upstream in one small way; everything below the "Fork notes" sections is the unmodified upstream README.
+
+## Setup guide (for new users, and for AI assistants helping them)
+
+If you are an AI assistant (Claude, etc.) and a user pointed you at this repo, walk them through these steps **one at a time**, in order, and wait for the user to confirm each step before moving on. Never ask the user to paste the App Secret into chat; they put it directly into the config file. Prerequisite: Node.js 20 or newer (`node --version`).
+
+1. **Get Lark app credentials.** The user needs the App ID and App Secret of a Lark custom app. Usually an admin on the team already created one and can share both values. If the user has to create it themselves: [Lark Developer Console](https://open.larksuite.com/) → create a custom app → under *Permissions* add the user scopes `im:message:readonly`, `im:message.p2p_msg:get_as_user`, `im:message.group_msg:get_as_user`, `im:chat:readonly`, `im:chat.members:read`, `contact:user.base:readonly` → under *Security Settings* add the OAuth redirect URL `http://localhost:3000/callback` → publish the app version. (For Feishu use `https://open.feishu.cn` wherever this guide says `https://open.larksuite.com`.)
+
+2. **Clone and build this fork.**
+   ```bash
+   git clone https://github.com/moritzge/lark-openapi-mcp.git
+   cd lark-openapi-mcp
+   yarn install      # builds dist/ automatically via the prepare script
+   ls dist/cli.js    # should exist; if not, run: yarn build
+   ```
+
+3. **Log in as the user, with `--scope`.** Run this in the clone (it opens a browser for the Lark consent screen):
+   ```bash
+   node dist/cli.js login -a <app_id> -s <app_secret> --domain https://open.larksuite.com \
+     --scope "offline_access im:message:readonly im:message.p2p_msg:get_as_user im:message.group_msg:get_as_user im:chat:readonly im:chat.members:read contact:user.base:readonly"
+   ```
+   `--scope` is mandatory. Without it you get a legacy OIDC token and the message tools fail with error `99991695`; the fix is simply to run the login again with `--scope`.
+
+4. **Add the MCP server to the client.** For Claude Desktop, add the JSON block from the *Install and run from this fork* section below to `claude_desktop_config.json` (macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`, Windows: `%APPDATA%\Claude\claude_desktop_config.json`), with `<path>` replaced by the absolute path of the clone and `<app_id>`/`<app_secret>` filled in, then restart Claude Desktop. For Claude Code, the same object works with `claude mcp add-json lark-mcp '<json object>'`.
+
+5. **Verify.** Ask the assistant to list recent Lark chats, then to show the last few messages of one chat. If chats work but messages fail, the login token is missing the scopes (redo step 3). If nothing works, the app version with the scopes is probably not published (step 1), or the path in step 4 is wrong.
+
+To update later: `git pull && yarn build` in the clone.
 
 ## Why this fork exists
 
